@@ -1,4 +1,4 @@
 package com.Rently.Business.DTO;
 
-public class AnfitrionDTO {
+public class AnfitrionDTO extends PersonaDTO{
 }

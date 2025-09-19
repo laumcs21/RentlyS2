@@ -2,8 +2,10 @@ package com.Rently.Persistence.Entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Entity
+@Table(name = "comentario")
 public class Comentario {
 
     @Id
@@ -11,21 +13,27 @@ public class Comentario {
     private Long id;
 
     private Integer calificacion;
+
     @Column(length = 1000)
     private String comentario;
+
     @Column(length = 1000)
     private String respuesta;
+
     private LocalDate fecha;
 
     @ManyToOne
+    @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
     @ManyToOne
+    @JoinColumn(name = "alojamiento_id", nullable = false)
     private Alojamiento alojamiento;
 
     public Comentario() { }
 
-    public Comentario(Long id, Integer calificacion, String comentario, String respuesta, LocalDate fecha, Usuario usuario, Alojamiento alojamiento) {
+    public Comentario(Long id, Integer calificacion, String comentario, String respuesta,
+                      LocalDate fecha, Usuario usuario, Alojamiento alojamiento) {
         this.id = id;
         this.calificacion = calificacion;
         this.comentario = comentario;
@@ -35,7 +43,7 @@ public class Comentario {
         this.alojamiento = alojamiento;
     }
 
-    // Getters / Setters
+    // 🔹 Getters y Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -56,4 +64,29 @@ public class Comentario {
 
     public Alojamiento getAlojamiento() { return alojamiento; }
     public void setAlojamiento(Alojamiento alojamiento) { this.alojamiento = alojamiento; }
+
+
+    @Override
+    public String toString() {
+        return "Comentario{" +
+                "id=" + id +
+                ", calificacion=" + calificacion +
+                ", comentario='" + comentario + '\'' +
+                ", respuesta='" + respuesta + '\'' +
+                ", fecha=" + fecha +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Comentario that)) return false;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
+

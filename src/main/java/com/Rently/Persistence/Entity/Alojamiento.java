@@ -1,50 +1,78 @@
 package com.Rently.Persistence.Entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "alojamiento")
 public class Alojamiento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(length = 250, nullable = false)
     private String titulo;
+
     @Column(length = 2000)
     private String descripcion;
+
+    @Column(length = 100, nullable = false)
     private String ciudad;
+
+    @Column(length = 300)
     private String direccion;
+
     private Double latitud;
     private Double longitud;
+
+    @Column(name = "precio_por_noche", nullable = false)
     private Double precioPorNoche;
-    private Integer capacidadMaxima;
 
-    @ElementCollection
-    @CollectionTable(name = "alojamiento_servicios", joinColumns = @JoinColumn(name = "alojamiento_id"))
-    @Column(name = "servicio")
-    private List<String> servicios;
-
+    @Column(name = "capacidad_maxima", nullable = false)
+    private Integer capacidadMaxima = 1;
 
     private boolean eliminado = false;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "anfitrion_id", nullable = false)
     private Anfitrion anfitrion;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_alojamiento")
+    @Column(name = "tipo_alojamiento", nullable = false)
     private TipoAlojamiento tipoAlojamiento;
 
-    @OneToMany(mappedBy = "alojamiento", cascade = CascadeType.ALL)
+
+    @OneToMany(mappedBy = "alojamiento", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AlojamientoImagen> imagenes = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "alojamiento_servicio",
+            joinColumns = @JoinColumn(name = "alojamiento_id"),
+            inverseJoinColumns = @JoinColumn(name = "servicio_id")
+    )
+    private List<Servicio> servicios = new ArrayList<>();
+
+    @OneToMany(mappedBy = "alojamiento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reserva> reservas = new ArrayList<>();
 
-    @OneToMany(mappedBy = "alojamiento", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "alojamiento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comentario> comentarios = new ArrayList<>();
 
-    public Alojamiento() { }
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    public Alojamiento(Long id, String titulo, String descripcion, String ciudad, String direccion, Double latitud, Double longitud, Double precioPorNoche, Integer capacidadMaxima, List<String> servicios, boolean eliminado, Anfitrion anfitrion, TipoAlojamiento tipoAlojamiento) {
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    private LocalDateTime updatedAt;
+
+    public Alojamiento() {}
+
+    public Alojamiento(Long id, String titulo, String descripcion, String ciudad, String direccion,
+                       Double latitud, Double longitud, Double precioPorNoche, Integer capacidadMaxima,
+                       boolean eliminado, Anfitrion anfitrion, TipoAlojamiento tipoAlojamiento) {
         this.id = id;
         this.titulo = titulo;
         this.descripcion = descripcion;
@@ -54,13 +82,11 @@ public class Alojamiento {
         this.longitud = longitud;
         this.precioPorNoche = precioPorNoche;
         this.capacidadMaxima = capacidadMaxima;
-        this.servicios=servicios;
         this.eliminado = eliminado;
         this.anfitrion = anfitrion;
         this.tipoAlojamiento = tipoAlojamiento;
     }
 
-    // Getters / Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -97,18 +123,18 @@ public class Alojamiento {
     public TipoAlojamiento getTipoAlojamiento() { return tipoAlojamiento; }
     public void setTipoAlojamiento(TipoAlojamiento tipoAlojamiento) { this.tipoAlojamiento = tipoAlojamiento; }
 
+    public List<AlojamientoImagen> getImagenes() { return imagenes; }
+    public void setImagenes(List<AlojamientoImagen> imagenes) { this.imagenes = imagenes; }
+
+    public List<Servicio> getServicios() { return servicios; }
+    public void setServicios(List<Servicio> servicios) { this.servicios = servicios; }
+
     public List<Reserva> getReservas() { return reservas; }
     public void setReservas(List<Reserva> reservas) { this.reservas = reservas; }
 
     public List<Comentario> getComentarios() { return comentarios; }
     public void setComentarios(List<Comentario> comentarios) { this.comentarios = comentarios; }
 
-    public List<String> getServicios() {
-        return servicios;
-    }
-
-    public void setServicios(List<String> servicios) {
-        this.servicios = servicios;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
-

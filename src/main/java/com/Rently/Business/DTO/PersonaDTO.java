@@ -1,53 +1,26 @@
-package com.Rently.Persistence.Entity;
+package com.Rently.Business.DTO;
 
-import jakarta.persistence.*;
+import com.Rently.Persistence.Entity.Rol;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "persona")
-@Inheritance(strategy = InheritanceType.JOINED)
-public abstract class Persona {
+public abstract class PersonaDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String nombre;
-
-    @Column(unique = true)
     private String email;
-
     private String telefono;
-
-    private String contrasena;
-
-    @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
-
-    @Enumerated(EnumType.STRING)
     private Rol rol;
-
-    @Column(name = "foto_perfil")
     private String fotoPerfil;
 
-    @Column(name = "created_at", updatable = false, insertable = false)
-    private LocalDateTime createdAt;
+    public PersonaDTO() {}
 
-    @Column(name = "updated_at", insertable = false)
-    private LocalDateTime updatedAt;
-
-    public Persona() {
-    }
-
-    public Persona(Long id, String nombre, String email, String telefono,
-                   String contrasena, LocalDate fechaNacimiento,
-                   Rol rol, String fotoPerfil) {
+    public PersonaDTO(Long id, String nombre, String email, String telefono,
+                      LocalDate fechaNacimiento, Rol rol, String fotoPerfil) {
         this.id = id;
         this.nombre = nombre;
         this.email = email;
         this.telefono = telefono;
-        this.contrasena = contrasena;
         this.fechaNacimiento = fechaNacimiento;
         this.rol = rol;
         this.fotoPerfil = fotoPerfil;
@@ -65,9 +38,6 @@ public abstract class Persona {
     public String getTelefono() { return telefono; }
     public void setTelefono(String telefono) { this.telefono = telefono; }
 
-    public String getContrasena() { return contrasena; }
-    public void setContrasena(String contrasena) { this.contrasena = contrasena; }
-
     public LocalDate getFechaNacimiento() { return fechaNacimiento; }
     public void setFechaNacimiento(LocalDate fechaNacimiento) { this.fechaNacimiento = fechaNacimiento; }
 
@@ -77,22 +47,16 @@ public abstract class Persona {
     public String getFotoPerfil() { return fotoPerfil; }
     public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-
     @Override
     public String toString() {
-        return "Persona{" +
+        return "PersonaDTO{" +
                 "id=" + id +
                 ", nombre='" + nombre + '\'' +
                 ", email='" + email + '\'' +
                 ", telefono='" + telefono + '\'' +
-                ", contrasena='" + contrasena + '\'' +
                 ", fechaNacimiento=" + fechaNacimiento +
                 ", rol=" + rol +
                 ", fotoPerfil='" + fotoPerfil + '\'' +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
                 '}';
     }
 }
