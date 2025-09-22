@@ -1,4 +1,4 @@
-package com.Rently.Business.Mapper;
+package com.Rently.Persistence.Mapper;
 
 import java.util.List;
 import java.util.stream.Collectors;

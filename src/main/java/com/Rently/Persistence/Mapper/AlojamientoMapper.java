@@ -1,4 +1,4 @@
-package com.Rently.Business.Mapper;
+package com.Rently.Persistence.Mapper;
 
 import com.Rently.Business.DTO.AlojamientoDTO;
 import com.Rently.Business.DTO.AlojamientoDetalleDTO;
@@ -33,7 +33,7 @@ public interface AlojamientoMapper {
 
     List<AlojamientoDetalleDTO> toDetalleDTOList(List<Alojamiento> alojamientos);
 
-    // ================= ENTITY CREATION =================
+    // ENTITY CREATION 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "descripcion", ignore = true)
     @Mapping(target = "latitud", ignore = true)
