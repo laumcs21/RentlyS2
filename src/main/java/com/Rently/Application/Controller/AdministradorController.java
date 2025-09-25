@@ -24,6 +24,11 @@ public class AdministradorController {
 
     // ---------------- CRUD de Administradores ----------------
 
+    @GetMapping("/")
+    public String home() {
+        return "🚀 Rently está corriendo correctamente!";
+    }
+
     @PostMapping
     @Operation(summary = "Crear administrador", description = "Registra un nuevo administrador en la plataforma")
     @ApiResponses({

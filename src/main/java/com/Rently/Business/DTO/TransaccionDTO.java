@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 public class TransaccionDTO {
 
     private Long id;
-    private Long reservaId;   // en vez de toda la entidad Reserva
+    private Long reservaId;
     private Double monto;
     private String moneda;
     private String metodoPago;
@@ -29,7 +29,6 @@ public class TransaccionDTO {
         this.updatedAt = updatedAt;
     }
 
-    // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

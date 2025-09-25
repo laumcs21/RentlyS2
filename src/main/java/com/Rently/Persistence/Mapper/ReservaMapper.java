@@ -27,7 +27,7 @@ public interface ReservaMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "usuario", ignore = true) // Se asigna en el servicio
     @Mapping(target = "alojamiento", ignore = true) // Se asigna en el servicio
-    @Mapping(target = "estado", expression = "java(EstadoReserva.PENDIENTE)") // Estado inicial
+    @Mapping(target = "estado", expression = "java(com.Rently.Persistence.Entity.EstadoReserva.PENDIENTE)" )// Estado inicial
     Reserva toEntity(ReservaDTO dto);
 
     //  DTO → ENTITY (ACTUALIZACIÓN) 
