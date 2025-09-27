@@ -16,12 +16,12 @@ public class ReservaDTO {
     public ReservaDTO() { }
 
     public ReservaDTO(Long id, LocalDate fechaInicio, LocalDate fechaFin, Integer numeroHuespedes,
-                      EstadoReserva estado, Long usuarioId, Long alojamientoId) {
+                      Long usuarioId, Long alojamientoId) {
         this.id = id;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
         this.numeroHuespedes = numeroHuespedes;
-        this.estado = estado;
+        this.estado = EstadoReserva.PENDIENTE;
         this.usuarioId = usuarioId;
         this.alojamientoId = alojamientoId;
     }

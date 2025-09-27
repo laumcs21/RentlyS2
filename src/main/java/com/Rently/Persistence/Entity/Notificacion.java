@@ -27,7 +27,7 @@ public class Notificacion {
 
     public Notificacion() {}
 
-    public Notificacion(Long id, Usuario usuario, Reserva reserva, Comentario comentario, String mensaje, boolean leida) {
+    public Notificacion(Long id, Usuario usuario, Reserva reserva, String mensaje, boolean leida) {
         this.id = id;
         this.usuario = usuario;
         this.reserva = reserva;

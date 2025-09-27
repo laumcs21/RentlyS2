@@ -15,12 +15,11 @@ public class NotificacionDTO {
 
     public NotificacionDTO() { }
 
-    public NotificacionDTO(Long id, Long usuarioId, Long reservaId, Long comentarioId,
+    public NotificacionDTO(Long id, Long usuarioId, Long reservaId,
                            String mensaje, boolean leida, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.usuarioId = usuarioId;
         this.reservaId = reservaId;
-        this.comentarioId = comentarioId;
         this.mensaje = mensaje;
         this.leida = leida;
         this.createdAt = createdAt;

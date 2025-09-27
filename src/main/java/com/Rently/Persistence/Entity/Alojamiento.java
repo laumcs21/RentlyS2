@@ -48,7 +48,7 @@ public class Alojamiento {
     @OneToMany(mappedBy = "alojamiento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AlojamientoImagen> imagenes = new ArrayList<>();
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "alojamiento_servicio",
             joinColumns = @JoinColumn(name = "alojamiento_id"),

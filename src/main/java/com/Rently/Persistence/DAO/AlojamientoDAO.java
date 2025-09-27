@@ -1,12 +1,15 @@
 package com.Rently.Persistence.DAO;
 
 import com.Rently.Business.DTO.AlojamientoDTO;
-import com.Rently.Business.DTO.AlojamientoDetalleDTO;
 import com.Rently.Persistence.Entity.Alojamiento;
+import com.Rently.Persistence.Entity.Anfitrion;
+import com.Rently.Persistence.Entity.Servicio;
 import com.Rently.Persistence.Mapper.AlojamientoMapper;
 import com.Rently.Persistence.Repository.AlojamientoRepository;
+import com.Rently.Persistence.Repository.AnfitrionRepository;
+import com.Rently.Persistence.Repository.ServicioRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,22 +19,64 @@ import java.util.Optional;
 public class AlojamientoDAO {
 
     private final AlojamientoRepository alojamientoRepository;
+    private final AnfitrionRepository anfitrionRepository;
+    private final ServicioRepository servicioRepository;
     private final AlojamientoMapper alojamientoMapper;
 
-    public AlojamientoDAO(AlojamientoRepository alojamientoRepository, AlojamientoMapper alojamientoMapper) {
+    public AlojamientoDAO(AlojamientoRepository alojamientoRepository,
+                          AlojamientoMapper alojamientoMapper,
+                          AnfitrionRepository anfitrionRepository,
+                          ServicioRepository servicioRepository) {
         this.alojamientoRepository = alojamientoRepository;
         this.alojamientoMapper = alojamientoMapper;
+        this.anfitrionRepository = anfitrionRepository;
+        this.servicioRepository = servicioRepository;
     }
 
-    public AlojamientoDTO crear(AlojamientoDTO dto) {
+    @Transactional
+    public AlojamientoDTO crearAlojamiento(AlojamientoDTO dto) {
         Alojamiento alojamiento = alojamientoMapper.toEntity(dto);
-        Alojamiento guardado = alojamientoRepository.save(alojamiento);
-        return alojamientoMapper.toDTO(guardado);
+
+        // Setear anfitrión
+        Anfitrion anfitrion = anfitrionRepository.findById(dto.getAnfitrionId())
+                .orElseThrow(() -> new RuntimeException("El anfitrión no existe"));
+        alojamiento.setAnfitrion(anfitrion);
+
+        // Setear servicios
+        if (dto.getServiciosId() != null && !dto.getServiciosId().isEmpty()) {
+            List<Servicio> servicios = servicioRepository.findAllById(dto.getServiciosId());
+            alojamiento.setServicios(servicios);
+        }
+
+        // Guardar alojamiento
+        Alojamiento saved = alojamientoRepository.save(alojamiento);
+
+        // 🔹 Recargar para asegurar que se carguen relaciones ManyToMany
+        Alojamiento fullyLoaded = alojamientoRepository.findById(saved.getId())
+                .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+
+        return alojamientoMapper.toDTO(fullyLoaded);
     }
 
-    public Optional<AlojamientoDetalleDTO> obtenerPorId(Long id) {
+    public Optional<AlojamientoDTO> actualizar(Long id, AlojamientoDTO dto) {
+        return alojamientoRepository.findById(id).map(alojamiento -> {
+            alojamientoMapper.updateFromDTO(alojamiento, dto);
+
+            // Actualizar servicios si vienen IDs
+            if (dto.getServiciosId() != null) {
+                List<Servicio> servicios = servicioRepository.findAllById(dto.getServiciosId());
+                alojamiento.setServicios(servicios);
+            }
+
+            Alojamiento actualizado = alojamientoRepository.save(alojamiento);
+            return alojamientoMapper.toDTO(actualizado);
+        });
+    }
+
+    // Los demás métodos se mantienen igual
+    public Optional<AlojamientoDTO> buscarPorId(Long id) {
         return alojamientoRepository.findById(id)
-                .map(alojamientoMapper::toDetalleDTO);
+                .map(alojamientoMapper::toDTO);
     }
 
     public List<AlojamientoDTO> listarTodos() {
@@ -58,14 +103,6 @@ public class AlojamientoDAO {
         return alojamientoMapper.toDTOList(alojamientoRepository.findByAnfitrionId(anfitrionId));
     }
 
-    public Optional<AlojamientoDTO> actualizar(Long id, AlojamientoDTO dto) {
-        return alojamientoRepository.findById(id).map(alojamiento -> {
-            alojamientoMapper.updateFromDTO(alojamiento, dto);
-            Alojamiento actualizado = alojamientoRepository.save(alojamiento);
-            return alojamientoMapper.toDTO(actualizado);
-        });
-    }
-
     public boolean eliminar(Long id) {
         return alojamientoRepository.findById(id).map(alojamiento -> {
             alojamiento.setEliminado(true);
@@ -73,5 +110,5 @@ public class AlojamientoDAO {
             return true;
         }).orElse(false);
     }
-}
 
+}

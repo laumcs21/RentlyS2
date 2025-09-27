@@ -5,7 +5,7 @@ import com.Rently.Persistence.Entity.Alojamiento;
 import com.Rently.Persistence.Entity.Comentario;
 import com.Rently.Persistence.Entity.Usuario;
 import com.Rently.Persistence.Mapper.ComentarioMapper;
-import com.Rently.Persistence.Repository.ComentarioRepository;
+import com.Rently.Persistence.Repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,15 +18,24 @@ import java.util.stream.Collectors;
 public class ComentarioDAO {
 
     private final ComentarioRepository repository;
+    private final UsuarioRepository usuarioRepository;
+    private final AlojamientoRepository alojamientoRepository;
     private final ComentarioMapper mapper;
 
-    public ComentarioDAO(ComentarioRepository repository, ComentarioMapper mapper) {
+    public ComentarioDAO(ComentarioRepository repository, UsuarioRepository usuarioRepository, AlojamientoRepository alojamientoRepository, ComentarioMapper mapper) {
         this.repository = repository;
+        this.usuarioRepository = usuarioRepository;
+        this.alojamientoRepository = alojamientoRepository;
         this.mapper = mapper;
     }
 
-    public ComentarioDTO crearComentario(ComentarioDTO dto, Usuario usuario, Alojamiento alojamiento) {
+    public ComentarioDTO crearComentario(ComentarioDTO dto) {
         Comentario comentario = mapper.toEntity(dto);
+        Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Alojamiento alojamiento = alojamientoRepository.findById(dto.getAlojamientoId())
+                .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
         comentario.setUsuario(usuario);
         comentario.setAlojamiento(alojamiento);
         Comentario saved = repository.save(comentario);

@@ -24,23 +24,27 @@ public class Reserva {
     @Column(nullable = false)
     private EstadoReserva estado;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "alojamiento_id", nullable = false)
     private Alojamiento alojamiento;
 
     public Reserva() { }
 
     public Reserva(Long id, LocalDate fechaInicio, LocalDate fechaFin, Integer numeroHuespedes,
-                   EstadoReserva estado, Usuario usuario, Alojamiento alojamiento) {
+                   Usuario usuario, Alojamiento alojamiento) {
+
+        assert numeroHuespedes <= getAlojamiento().getCapacidadMaxima();
+        assert fechaInicio.isBefore(fechaFin);
+
         this.id = id;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
         this.numeroHuespedes = numeroHuespedes;
-        this.estado = estado;
+        this.estado = EstadoReserva.PENDIENTE;
         this.usuario = usuario;
         this.alojamiento = alojamiento;
     }
@@ -66,3 +70,4 @@ public class Reserva {
     public Alojamiento getAlojamiento() { return alojamiento; }
     public void setAlojamiento(Alojamiento alojamiento) { this.alojamiento = alojamiento; }
 }
+

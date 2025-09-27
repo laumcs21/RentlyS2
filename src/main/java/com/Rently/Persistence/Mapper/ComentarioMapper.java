@@ -51,9 +51,6 @@ public interface ComentarioMapper {
             comentario.setRespuesta(respuesta.trim());
         }
     }
-
-    
-     // Validar calificación dentro del rango permitido (1-5)
      
     @Named("validarCalificacion")
     default Integer validarCalificacion(Integer calificacion) {

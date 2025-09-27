@@ -34,6 +34,9 @@ public class Comentario {
 
     public Comentario(Long id, Integer calificacion, String comentario, String respuesta,
                       LocalDate fecha, Usuario usuario, Alojamiento alojamiento) {
+
+        assert calificacion <= 5 || calificacion > 0;
+
         this.id = id;
         this.calificacion = calificacion;
         this.comentario = comentario;

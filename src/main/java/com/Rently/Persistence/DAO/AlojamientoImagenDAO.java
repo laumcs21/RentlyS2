@@ -38,6 +38,13 @@ public class AlojamientoImagenDAO {
                 .collect(Collectors.toList());
     }
 
+    public AlojamientoImagenDTO obtenerImagenPorId(Long id) {
+        return repository.findById(id)
+                .map(mapper::toDTO)
+                .orElse(null);
+    }
+
+
     public AlojamientoImagenDTO actualizarImagen(Long id, AlojamientoImagenDTO dto) {
         AlojamientoImagen existente = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Imagen no encontrada con id " + id));
@@ -46,10 +53,11 @@ public class AlojamientoImagenDAO {
         return mapper.toDTO(actualizado);
     }
 
-    public void eliminarImagen(Long id) {
+    public boolean eliminarImagen(Long id) {
         if (!repository.existsById(id)) {
             throw new EntityNotFoundException("Imagen no encontrada con id " + id);
         }
         repository.deleteById(id);
+        return true;
     }
 }

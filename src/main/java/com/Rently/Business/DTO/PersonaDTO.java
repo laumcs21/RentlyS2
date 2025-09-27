@@ -9,18 +9,20 @@ public abstract class PersonaDTO {
     private String nombre;
     private String email;
     private String telefono;
+    private String contrasena;
     private LocalDate fechaNacimiento;
     private Rol rol;
     private String fotoPerfil;
 
     public PersonaDTO() {}
 
-    public PersonaDTO(Long id, String nombre, String email, String telefono,
+    public PersonaDTO(Long id, String nombre, String email, String telefono, String contrasena,
                       LocalDate fechaNacimiento, Rol rol, String fotoPerfil) {
         this.id = id;
         this.nombre = nombre;
         this.email = email;
         this.telefono = telefono;
+        this.contrasena = contrasena;
         this.fechaNacimiento = fechaNacimiento;
         this.rol = rol;
         this.fotoPerfil = fotoPerfil;
@@ -46,6 +48,14 @@ public abstract class PersonaDTO {
 
     public String getFotoPerfil() { return fotoPerfil; }
     public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
+
+    public String getContrasena() {
+        return contrasena;
+    }
+
+    public void setContrasena(String contrasena) {
+        this.contrasena = contrasena;
+    }
 
     @Override
     public String toString() {
