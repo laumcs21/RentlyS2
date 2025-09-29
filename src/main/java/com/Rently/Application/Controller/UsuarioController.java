@@ -9,11 +9,16 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.Rently.Business.Service.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +27,12 @@ import java.util.Map;
 @RequestMapping("/api/usuarios")
 @Tag(name = "Usuarios", description = "Operaciones relacionadas con la gestión de usuarios, búsquedas, reservas y comentarios")
 public class UsuarioController {
+
+    private final UsuarioService usuarioService;
+
+    public UsuarioController(UsuarioService usuarioService) {
+        this.usuarioService = usuarioService;
+    }
 
     // ---------------- CRUD de Usuarios ----------------
 
@@ -32,8 +43,17 @@ public class UsuarioController {
             @ApiResponse(responseCode = "400", description = "Solicitud incorrecta: datos incompletos"),
             @ApiResponse(responseCode = "409", description = "Email duplicado")
     })
-    public ResponseEntity<UsuarioDTO> crearUsuario(@RequestBody UsuarioDTO usuario) {
-        return ResponseEntity.ok(null);
+    public ResponseEntity<?> crearUsuario(@Valid @RequestBody UsuarioDTO usuario) {
+        try {
+            UsuarioDTO nuevoUsuario = usuarioService.registerUser(usuario);
+            URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                    .path("/{id}")
+                    .buildAndExpand(nuevoUsuario.getId())
+                    .toUri();
+            return ResponseEntity.created(location).body(nuevoUsuario);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/{id}")
@@ -44,7 +64,9 @@ public class UsuarioController {
     })
     public ResponseEntity<UsuarioDTO> obtenerUsuario(
             @Parameter(description = "ID del usuario", example = "1") @PathVariable Long id) {
-        return ResponseEntity.ok(null);
+        return usuarioService.findUserById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
@@ -56,8 +78,9 @@ public class UsuarioController {
     })
     public ResponseEntity<UsuarioDTO> actualizarUsuario(
             @Parameter(description = "ID del usuario", example = "1") @PathVariable Long id,
-            @RequestBody UsuarioDTO usuario) {
-        return ResponseEntity.ok(null);
+            @Valid @RequestBody UsuarioDTO usuario) {
+        UsuarioDTO usuarioActualizado = usuarioService.updateUserProfile(id, usuario);
+        return ResponseEntity.ok(usuarioActualizado);
     }
 
     @DeleteMapping("/{id}")
@@ -69,6 +92,7 @@ public class UsuarioController {
     })
     public ResponseEntity<Void> eliminarUsuario(
             @Parameter(description = "ID del usuario", example = "1") @PathVariable Long id) {
+        usuarioService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 
