@@ -1,6 +1,7 @@
-package com.Rently.Business.Service;
+package com.Rently.Business.Service.impl;
 
 import com.cloudinary.Cloudinary;
+import com.Rently.Business.Service.ImageService;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

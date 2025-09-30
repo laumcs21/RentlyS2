@@ -1,7 +1,9 @@
-package com.Rently.Business.Service;
+package com.Rently.Business.Service.impl;
 
 import com.Rently.Business.DTO.Auth.AuthRequest;
 import com.Rently.Business.DTO.Auth.AuthResponse;
+import com.Rently.Business.Service.AuthService;
+import com.Rently.Business.Service.UsuarioService;
 import com.Rently.Business.DTO.UsuarioDTO;
 import com.Rently.Configuration.Security.JwtService;
 import com.Rently.Persistence.Entity.Usuario;

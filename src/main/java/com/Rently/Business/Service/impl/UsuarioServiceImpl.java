@@ -1,6 +1,7 @@
-package com.Rently.Business.Service;
+package com.Rently.Business.Service.impl;
 
 import com.Rently.Business.DTO.UsuarioDTO;
+import com.Rently.Business.Service.UsuarioService;
 import com.Rently.Persistence.Entity.Usuario;
 import com.Rently.Persistence.Mapper.PersonaMapper;
 import com.Rently.Persistence.Repository.UsuarioRepository;
