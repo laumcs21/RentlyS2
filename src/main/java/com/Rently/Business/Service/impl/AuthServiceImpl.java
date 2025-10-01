@@ -13,6 +13,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
+/**
+ * Implementación del servicio de autenticación.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -22,16 +25,28 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    /**
+     * Registra un nuevo usuario y genera un token de autenticación.
+     *
+     * @param request el DTO del usuario a registrar
+     * @return una respuesta de autenticación con el token generado
+     */
     @Override
     public AuthResponse register(UsuarioDTO request) {
         usuarioService.registerUser(request);
-        // After registration, fetch the user and generate a token
+        // Después del registro, busca el usuario y genera un token
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalStateException("Usuario no encontrado después del registro"));
         String token = jwtService.generateToken(usuario);
         return AuthResponse.builder().token(token).build();
     }
 
+    /**
+     * Autentica a un usuario y genera un token de autenticación.
+     *
+     * @param request la solicitud de autenticación con el email y la contraseña
+     * @return una respuesta de autenticación con el token generado
+     */
     @Override
     public AuthResponse login(AuthRequest request) {
         authenticationManager.authenticate(
@@ -40,9 +55,9 @@ public class AuthServiceImpl implements AuthService {
                         request.getPassword()
                 )
         );
-        // If authentication is successful, generate a token
+        // Si la autenticación es exitosa, genera un token
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-                .orElseThrow(); // Should not happen if authentication is successful
+                .orElseThrow(); // No debería ocurrir si la autenticación es exitosa
         String token = jwtService.generateToken(usuario);
         return AuthResponse.builder().token(token).build();
     }
