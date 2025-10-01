@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
-class AlojamientoImagenIntegrationTest {
+class AlojamientoImagenTest {
 
     @Autowired
     private AlojamientoImagenDAO imagenDAO;

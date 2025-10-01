@@ -2,6 +2,7 @@ package com.Rently.Persistence.Entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "reserva")
@@ -31,6 +32,9 @@ public class Reserva {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "alojamiento_id", nullable = false)
     private Alojamiento alojamiento;
+
+    @OneToMany(mappedBy = "reserva", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Notificacion> notificaciones;
 
     public Reserva() { }
 
@@ -69,5 +73,14 @@ public class Reserva {
 
     public Alojamiento getAlojamiento() { return alojamiento; }
     public void setAlojamiento(Alojamiento alojamiento) { this.alojamiento = alojamiento; }
+
+    public List<Notificacion> getNotificaciones() {
+        return notificaciones;
+    }
+
+    public void setNotificaciones(List<Notificacion> notificaciones) {
+        this.notificaciones = notificaciones;
+    }
+
 }
 

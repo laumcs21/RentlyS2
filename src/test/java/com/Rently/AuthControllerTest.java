@@ -3,6 +3,7 @@ package com.Rently;
 import com.Rently.Business.DTO.Auth.AuthRequest;
 import com.Rently.Business.DTO.UsuarioDTO;
 import com.Rently.Persistence.Entity.Rol;
+import com.Rently.Persistence.Entity.Usuario;
 import com.Rently.Persistence.Repository.UsuarioRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,8 +75,24 @@ class AuthControllerTest {
 
     @Test
     void testAccessProtectedEndpointWithToken() throws Exception {
-        // 1. Registrar y hacer login para obtener un token
-        testRegisterUser();
+        // 1. Registrar un usuario
+        UsuarioDTO newUser = new UsuarioDTO();
+        newUser.setNombre("Test User");
+        newUser.setEmail("test@example.com");
+        newUser.setContrasena("password123");
+        newUser.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+        newUser.setRol(Rol.USUARIO);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newUser)))
+                .andExpect(status().isOk());
+
+        // 2. Obtener el id real del usuario registrado
+        Usuario savedUser = usuarioRepository.findByEmail("test@example.com")
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado en BD"));
+
+        // 3. Hacer login para obtener el token
         AuthRequest authRequest = new AuthRequest("test@example.com", "password123");
 
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
@@ -87,11 +104,11 @@ class AuthControllerTest {
         String responseString = loginResult.getResponse().getContentAsString();
         String token = objectMapper.readTree(responseString).get("token").asText();
 
-        // 2. Intentar acceder a un endpoint protegido (ej. /api/usuarios) con el token
-        // Asumimos que tienes un UsuarioController con un endpoint GET /api/usuarios
-        mockMvc.perform(get("/api/usuarios")
+        // 4. Intentar acceder a un endpoint protegido con el id dinámico
+        mockMvc.perform(get("/api/usuarios/{id}", savedUser.getId())
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("test@example.com"));
     }
 
     @Test
