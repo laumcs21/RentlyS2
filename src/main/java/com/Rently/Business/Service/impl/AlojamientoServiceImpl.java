@@ -3,117 +3,123 @@ package com.Rently.Business.Service.impl;
 import com.Rently.Business.DTO.AlojamientoDTO;
 import com.Rently.Business.Service.AlojamientoService;
 import com.Rently.Persistence.DAO.AlojamientoDAO;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Implementación del servicio para la gestión de alojamientos.
- */
 @Service
+@Transactional
 public class AlojamientoServiceImpl implements AlojamientoService {
 
-    @Autowired
-    private AlojamientoDAO alojamientoDAO;
+    private final AlojamientoDAO alojamientoDAO;
 
-    /**
-     * Crea un nuevo alojamiento.
-     *
-     * @param alojamientoDTO el alojamiento a crear
-     * @return el alojamiento creado
-     */
+    public AlojamientoServiceImpl(AlojamientoDAO alojamientoDAO) {
+        this.alojamientoDAO = alojamientoDAO;
+    }
+
     @Override
     public AlojamientoDTO create(AlojamientoDTO alojamientoDTO) {
+        validateCreateData(alojamientoDTO);
         return alojamientoDAO.crearAlojamiento(alojamientoDTO);
     }
 
-    /**
-     * Busca un alojamiento por su ID.
-     *
-     * @param id el ID del alojamiento
-     * @return un optional que contiene el alojamiento si se encuentra, o vacío en caso contrario
-     */
     @Override
+    @Transactional(readOnly = true)
     public Optional<AlojamientoDTO> findById(Long id) {
+        if (id == null || id <= 0) throw new IllegalArgumentException("ID inválido");
         return alojamientoDAO.buscarPorId(id);
     }
 
-    /**
-     * Devuelve una lista de todos los alojamientos.
-     *
-     * @return una lista de todos los alojamientos
-     */
     @Override
+    @Transactional(readOnly = true)
     public List<AlojamientoDTO> findAll() {
         return alojamientoDAO.listarTodos();
     }
 
-    /**
-     * Devuelve una lista de todos los alojamientos activos.
-     *
-     * @return una lista de todos los alojamientos activos
-     */
     @Override
+    @Transactional(readOnly = true)
     public List<AlojamientoDTO> findActive() {
         return alojamientoDAO.listarActivos();
     }
 
-    /**
-     * Busca alojamientos por ciudad.
-     *
-     * @param city la ciudad por la que buscar
-     * @return una lista de alojamientos en la ciudad especificada
-     */
     @Override
+    @Transactional(readOnly = true)
     public List<AlojamientoDTO> findByCity(String city) {
-        return alojamientoDAO.buscarPorCiudad(city);
+        if (city == null || city.trim().isEmpty()) throw new IllegalArgumentException("Ciudad inválida");
+        return alojamientoDAO.buscarPorCiudad(city.trim());
     }
 
-    /**
-     * Busca alojamientos por un rango de precios.
-     *
-     * @param min el precio mínimo
-     * @param max el precio máximo
-     * @return una lista de alojamientos dentro del rango de precios especificado
-     */
     @Override
+    @Transactional(readOnly = true)
     public List<AlojamientoDTO> findByPrice(Double min, Double max) {
+        if (min == null || max == null) throw new IllegalArgumentException("Rango de precios inválido");
+        if (min < 0 || max < 0) throw new IllegalArgumentException("Los precios no pueden ser negativos");
+        if (min > max) throw new IllegalArgumentException("El precio mínimo no puede ser mayor al máximo");
         return alojamientoDAO.buscarPorPrecio(min, max);
     }
 
-    /**
-     * Busca alojamientos por el ID del anfitrión.
-     *
-     * @param hostId el ID del anfitrión
-     * @return una lista de alojamientos del anfitrión especificado
-     */
     @Override
+    @Transactional(readOnly = true)
     public List<AlojamientoDTO> findByHost(Long hostId) {
+        if (hostId == null || hostId <= 0) throw new IllegalArgumentException("ID anfitrión inválido");
         return alojamientoDAO.buscarPorAnfitrion(hostId);
     }
 
-    /**
-     * Actualiza un alojamiento existente.
-     *
-     * @param id             el ID del alojamiento
-     * @param alojamientoDTO el alojamiento con la información actualizada
-     * @return un optional que contiene el alojamiento actualizado si se encuentra, o vacío en caso contrario
-     */
     @Override
     public Optional<AlojamientoDTO> update(Long id, AlojamientoDTO alojamientoDTO) {
+        if (id == null || id <= 0) throw new IllegalArgumentException("ID inválido");
+        validateUpdateData(alojamientoDTO);
+
+        Optional<AlojamientoDTO> existing = alojamientoDAO.buscarPorId(id);
+        if (existing.isEmpty()) {
+            throw new RuntimeException("Alojamiento con ID " + id + " no encontrado");
+        }
+
         return alojamientoDAO.actualizar(id, alojamientoDTO);
     }
 
-    /**
-     * Elimina un alojamiento por su ID.
-     *
-     * @param id el ID del alojamiento
-     * @return true si el alojamiento fue eliminado, false en caso contrario
-     */
     @Override
     public boolean delete(Long id) {
+        if (id == null || id <= 0) throw new IllegalArgumentException("ID inválido");
+
+        Optional<AlojamientoDTO> existing = alojamientoDAO.buscarPorId(id);
+        if (existing.isEmpty()) {
+            throw new RuntimeException("Alojamiento con ID " + id + " no encontrado");
+        }
+
         return alojamientoDAO.eliminar(id);
     }
+
+
+    // ---------------- Validaciones privadas ----------------
+
+    private void validateCreateData(AlojamientoDTO dto) {
+        if (dto == null) throw new IllegalArgumentException("Alojamiento es obligatorio");
+        if (dto.getTitulo() == null || dto.getTitulo().trim().isEmpty())
+            throw new IllegalArgumentException("titulo es obligatorio");
+        if (dto.getPrecioPorNoche() == null || dto.getPrecioPorNoche() <= 0)
+            throw new IllegalArgumentException("precioPorNoche debe ser mayor a 0");
+        if (dto.getCapacidadMaxima() == null || dto.getCapacidadMaxima() <= 0)
+            throw new IllegalArgumentException("capacidadMaxima debe ser mayor o igual a 1");
+        if (dto.getAnfitrionId() == null || dto.getAnfitrionId() <= 0)
+            throw new IllegalArgumentException("anfitrionId es obligatorio");
+        // opcional: validar longitud/latitud si se proveen
+        if (dto.getLatitud() != null && (dto.getLatitud() < -90 || dto.getLatitud() > 90))
+            throw new IllegalArgumentException("latitud inválida");
+        if (dto.getLongitud() != null && (dto.getLongitud() < -180 || dto.getLongitud() > 180))
+            throw new IllegalArgumentException("longitud inválida");
+    }
+
+    private void validateUpdateData(AlojamientoDTO dto) {
+        if (dto == null) return; // nothing to update
+        if (dto.getTitulo() != null && dto.getTitulo().trim().isEmpty())
+            throw new IllegalArgumentException("titulo no puede estar vacío");
+        if (dto.getPrecioPorNoche() != null && dto.getPrecioPorNoche() <= 0)
+            throw new IllegalArgumentException("precioPorNoche debe ser mayor a 0");
+        if (dto.getCapacidadMaxima() != null && dto.getCapacidadMaxima() <= 0)
+            throw new IllegalArgumentException("capacidadMaxima debe ser mayor o igual a 1");
+    }
 }
+

@@ -105,10 +105,11 @@ public class AlojamientoDAO {
 
     public boolean eliminar(Long id) {
         return alojamientoRepository.findById(id).map(alojamiento -> {
-            alojamiento.setEliminado(true);
+            alojamiento.setEliminado(true);  // ← Soft delete
             alojamientoRepository.save(alojamiento);
             return true;
         }).orElse(false);
     }
+
 
 }

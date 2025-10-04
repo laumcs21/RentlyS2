@@ -5,26 +5,28 @@ import com.Rently.Business.Service.UsuarioService;
 import com.Rently.Persistence.Entity.Usuario;
 import com.Rently.Persistence.Mapper.PersonaMapper;
 import com.Rently.Persistence.Repository.UsuarioRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
-/**
- * Implementación de la interfaz de servicio para Usuarios.
- * Contiene la lógica de negocio y orquesta las operaciones con la capa de persistencia.
- */
 @Service
 @Transactional
+@Slf4j
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PersonaMapper personaMapper;
     private final PasswordEncoder passwordEncoder;
 
-    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, PersonaMapper personaMapper, PasswordEncoder passwordEncoder) {
+    public UsuarioServiceImpl(UsuarioRepository usuarioRepository,
+                              PersonaMapper personaMapper,
+                              PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.personaMapper = personaMapper;
         this.passwordEncoder = passwordEncoder;
@@ -32,65 +34,164 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     public UsuarioDTO registerUser(UsuarioDTO usuarioDTO) {
-        // 1. Lógica de negocio: Validación de email existente.
+        log.info("Registrando usuario con email {}", usuarioDTO.getEmail());
+
+        // Validaciones de datos de negocio
+        validateUserData(usuarioDTO);
+
+        // Verificar si el email ya existe
         if (usuarioRepository.findByEmail(usuarioDTO.getEmail()).isPresent()) {
+            log.warn("Intento de registro con email duplicado: {}", usuarioDTO.getEmail());
             throw new IllegalStateException("El email " + usuarioDTO.getEmail() + " ya está en uso.");
         }
 
-        // 2. Mapeo de DTO a Entidad usando el método correcto del mapper.
+        // Mapeo DTO → Entidad
         Usuario usuario = personaMapper.dtoToUsuario(usuarioDTO);
 
-        // 3. Lógica de negocio: Procesamiento de datos sensibles.
-        // Se encripta la contraseña antes de guardarla.
+        // Encriptar contraseña antes de guardar
         usuario.setContrasena(passwordEncoder.encode(usuarioDTO.getContrasena()));
 
-        // 4. Persistencia en la base de datos.
+        // Guardar en BD
         Usuario savedUsuario = usuarioRepository.save(usuario);
 
-        // 5. Mapeo de Entidad a DTO para la respuesta.
+        log.info("Usuario registrado con éxito. ID: {}", savedUsuario.getId());
         return personaMapper.usuarioToDTO(savedUsuario);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<UsuarioDTO> findUserById(Long id) {
+        log.debug("Buscando usuario por ID {}", id);
         return usuarioRepository.findById(id)
                 .map(personaMapper::usuarioToDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<UsuarioDTO> findUserByEmail(String email) {
+        log.debug("Buscando usuario por email {}", email);
+        return usuarioRepository.findByEmail(email)
+                .map(personaMapper::usuarioToDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<UsuarioDTO> findAllUsers() {
-        // Se utiliza el método del mapper que convierte la lista de entidades a DTOs.
+        log.debug("Obteniendo todos los usuarios");
         return personaMapper.usuariosToDTO(usuarioRepository.findAll());
     }
 
     @Override
     public UsuarioDTO updateUserProfile(Long id, UsuarioDTO usuarioDTO) {
-        // Se busca el usuario existente o se lanza una excepción si no se encuentra.
-        Usuario existingUser = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id)); // TODO: Reemplazar con excepción personalizada.
+        log.info("Actualizando usuario con ID {}", id);
 
-        // Se utiliza el método de actualización del mapper para aplicar los cambios del DTO a la entidad.
+        Usuario existingUser = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
+
+        // Validaciones parciales (solo lo que viene en el DTO)
+        validateUserUpdateData(usuarioDTO);
+
+        // Actualizar datos con mapper
         personaMapper.updateUsuarioFromDTO(existingUser, usuarioDTO);
 
-        // Si se proporciona una nueva contraseña en el DTO, se encripta y actualiza.
+        // Si hay contraseña nueva, encriptar
         if (usuarioDTO.getContrasena() != null && !usuarioDTO.getContrasena().isEmpty()) {
             existingUser.setContrasena(passwordEncoder.encode(usuarioDTO.getContrasena()));
         }
 
-        // Se guarda la entidad actualizada.
         Usuario updatedUsuario = usuarioRepository.save(existingUser);
 
-        // Se retorna el DTO con los datos actualizados.
+        log.info("Usuario actualizado con éxito. ID {}", id);
         return personaMapper.usuarioToDTO(updatedUsuario);
     }
 
     @Override
     public void deleteUser(Long id) {
+        log.info("Eliminando usuario con ID {}", id);
+
         if (!usuarioRepository.existsById(id)) {
-            throw new RuntimeException("Usuario no encontrado con id: " + id); // TODO: Reemplazar con excepción personalizada.
+            log.warn("Intento de eliminar usuario inexistente ID {}", id);
+            throw new RuntimeException("Usuario no encontrado con id: " + id);
         }
         usuarioRepository.deleteById(id);
+
+        log.info("Usuario eliminado con éxito ID {}", id);
+    }
+
+    // =======================================================
+    // VALIDACIONES PRIVADAS
+    // =======================================================
+
+    private void validateUserData(UsuarioDTO usuarioDTO) {
+        if (usuarioDTO.getNombre() == null || usuarioDTO.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre es obligatorio");
+        }
+        if (usuarioDTO.getNombre().length() > 100) {
+            throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
+        }
+
+        if (usuarioDTO.getEmail() == null || usuarioDTO.getEmail().trim().isEmpty()) {
+            throw new IllegalArgumentException("El email es obligatorio");
+        }
+        if (!isValidEmail(usuarioDTO.getEmail())) {
+            throw new IllegalArgumentException("El formato del email no es válido");
+        }
+
+        if (usuarioDTO.getContrasena() == null || usuarioDTO.getContrasena().isEmpty()) {
+            throw new IllegalArgumentException("La contraseña es obligatoria");
+        }
+        if (!isValidPassword(usuarioDTO.getContrasena())) {
+            throw new IllegalArgumentException("La contraseña debe tener al menos 8 caracteres, incluir una mayúscula y un número");
+        }
+
+        if (usuarioDTO.getTelefono() == null || !usuarioDTO.getTelefono().matches("\\d{7,15}")) {
+            throw new IllegalArgumentException("El teléfono es obligatorio y debe contener entre 7 y 15 dígitos numéricos");
+        }
+
+        if (usuarioDTO.getFechaNacimiento() != null && usuarioDTO.getFechaNacimiento().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("La fecha de nacimiento no puede ser futura");
+        }
+
+        if (usuarioDTO.getRol() == null) {
+            throw new IllegalArgumentException("El rol del usuario es obligatorio");
+        }
+    }
+
+    private void validateUserUpdateData(UsuarioDTO usuarioDTO) {
+        if (usuarioDTO.getNombre() != null) {
+            if (usuarioDTO.getNombre().trim().isEmpty()) {
+                throw new IllegalArgumentException("El nombre no puede estar vacío");
+            }
+            if (usuarioDTO.getNombre().length() > 100) {
+                throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
+            }
+        }
+
+        if (usuarioDTO.getEmail() != null && !isValidEmail(usuarioDTO.getEmail())) {
+            throw new IllegalArgumentException("El formato del email no es válido");
+        }
+
+        if (usuarioDTO.getContrasena() != null && !isValidPassword(usuarioDTO.getContrasena())) {
+            throw new IllegalArgumentException("La contraseña debe tener al menos 8 caracteres, incluir una mayúscula y un número");
+        }
+
+        if (usuarioDTO.getTelefono() != null && !usuarioDTO.getTelefono().matches("\\d{7,15}")) {
+            throw new IllegalArgumentException("El teléfono debe contener entre 7 y 15 dígitos numéricos");
+        }
+
+        if (usuarioDTO.getFechaNacimiento() != null && usuarioDTO.getFechaNacimiento().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("La fecha de nacimiento no puede ser futura");
+        }
+    }
+
+    private boolean isValidEmail(String email) {
+        return Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$").matcher(email).matches();
+    }
+
+    private boolean isValidPassword(String password) {
+        return password.length() >= 8 &&
+                Pattern.compile("[A-Z]").matcher(password).find() &&
+                Pattern.compile("[0-9]").matcher(password).find();
     }
 }
+

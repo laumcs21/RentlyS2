@@ -13,6 +13,7 @@ public abstract class PersonaDTO {
     private LocalDate fechaNacimiento;
     private Rol rol;
     private String fotoPerfil;
+    private boolean activo = true;
 
     public PersonaDTO() {}
 
@@ -55,6 +56,14 @@ public abstract class PersonaDTO {
 
     public void setContrasena(String contrasena) {
         this.contrasena = contrasena;
+    }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
     }
 
     @Override

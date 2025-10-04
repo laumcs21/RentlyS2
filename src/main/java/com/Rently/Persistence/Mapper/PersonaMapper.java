@@ -29,8 +29,7 @@ public interface PersonaMapper {
     
   
     // UsuarioDTO -> Usuario Entity (para crear)
-    
-    @Mapping(target = "id", ignore = true)
+
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "contrasena", ignore = true) // Se maneja por separado por seguridad
@@ -44,8 +43,7 @@ public interface PersonaMapper {
     
 
     // Actualizar Usuario existente con datos del DTO
-    
-    @Mapping(target = "id", ignore = true)
+
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "contrasena", ignore = true)
@@ -61,7 +59,6 @@ public interface PersonaMapper {
     
     // AnfitrionDTO -> Anfitrion Entity (para crear)
 
-    @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "contrasena", ignore = true)

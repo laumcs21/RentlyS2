@@ -37,6 +37,10 @@ public abstract class Persona {
     @Column(name = "updated_at", insertable = false)
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    private boolean activo = true;
+
+
     public Persona() {
     }
 
@@ -55,6 +59,14 @@ public abstract class Persona {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }

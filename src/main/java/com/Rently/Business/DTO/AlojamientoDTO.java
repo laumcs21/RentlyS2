@@ -26,11 +26,23 @@ public class AlojamientoDTO {
 
     public AlojamientoDTO() {}
 
-    public AlojamientoDTO(Long id, String titulo, String descripcion, String ciudad, String direccion,
-                                 Double latitud, Double longitud, Double precioPorNoche, Integer capacidadMaxima,
-                                 boolean eliminado, Long anfitrionId, TipoAlojamiento tipoAlojamiento,
-                                 List<String> imagenes, List<Long> serviciosID, List<ComentarioDTO> comentarios,
-                                 LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public AlojamientoDTO(Long id,
+                          String titulo,
+                          String descripcion,
+                          String ciudad,
+                          String direccion,
+                          Double latitud,
+                          Double longitud,
+                          Double precioPorNoche,
+                          Integer capacidadMaxima,
+                          boolean eliminado,
+                          Long anfitrionId,
+                          TipoAlojamiento tipoAlojamiento,
+                          List<String> imagenes,
+                          List<Long> serviciosId,
+                          List<ComentarioDTO> comentarios,
+                          LocalDateTime createdAt,
+                          LocalDateTime updatedAt) {
         this.id = id;
         this.titulo = titulo;
         this.descripcion = descripcion;
@@ -50,6 +62,7 @@ public class AlojamientoDTO {
         this.updatedAt = updatedAt;
     }
 
+    // getters / setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -84,7 +97,7 @@ public class AlojamientoDTO {
     public void setAnfitrionId(Long anfitrionId) { this.anfitrionId = anfitrionId; }
 
     public TipoAlojamiento getTipoAlojamiento() { return tipoAlojamiento; }
-    public void setTipoAlojamiento(TipoAlojamiento tipoAlojamientoId) { this.tipoAlojamiento = tipoAlojamientoId; }
+    public void setTipoAlojamiento(TipoAlojamiento tipoAlojamiento) { this.tipoAlojamiento = tipoAlojamiento; }
 
     public List<String> getImagenes() { return imagenes; }
     public void setImagenes(List<String> imagenes) { this.imagenes = imagenes; }
@@ -101,3 +114,4 @@ public class AlojamientoDTO {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+

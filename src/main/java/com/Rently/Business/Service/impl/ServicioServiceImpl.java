@@ -8,67 +8,91 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Implementación del servicio para la gestión de servicios.
- */
 @Service
 public class ServicioServiceImpl implements ServicioService {
 
     @Autowired
     private ServicioDAO servicioDAO;
 
-    /**
-     * Crea un nuevo servicio.
-     *
-     * @param servicioDTO el servicio a crear
-     * @return el servicio creado
-     */
     @Override
     public ServicioDTO create(ServicioDTO servicioDTO) {
+        validateServicio(servicioDTO);
+
+        // Verificar duplicados por nombre
+        List<ServicioDTO> existentes = servicioDAO.obtenerServicios();
+        boolean existe = existentes.stream()
+                .anyMatch(s -> s.getNombre().equalsIgnoreCase(servicioDTO.getNombre()));
+        if (existe) {
+            throw new IllegalArgumentException("Ya existe un servicio con el nombre: " + servicioDTO.getNombre());
+        }
+
         return servicioDAO.crearServicio(servicioDTO);
     }
 
-    /**
-     * Devuelve una lista de todos los servicios.
-     *
-     * @return una lista de todos los servicios
-     */
     @Override
     public List<ServicioDTO> findAll() {
         return servicioDAO.obtenerServicios();
     }
 
-    /**
-     * Busca un servicio por su ID.
-     *
-     * @param id el ID del servicio
-     * @return el servicio si se encuentra, o null en caso contrario
-     */
     @Override
     public ServicioDTO findById(Long id) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("ID de servicio inválido");
+        }
         return servicioDAO.obtenerServicioPorId(id);
     }
 
-    /**
-     * Actualiza un servicio existente.
-     *
-     * @param id          el ID del servicio
-     * @param servicioDTO el servicio con la información actualizada
-     * @return el servicio actualizado si se encuentra, o null en caso contrario
-     */
     @Override
     public ServicioDTO update(Long id, ServicioDTO servicioDTO) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("ID inválido");
+        }
+        validateServicio(servicioDTO);
+
+        // Validar duplicados en update (excepto el mismo servicio)
+        List<ServicioDTO> existentes = servicioDAO.obtenerServicios();
+        boolean existe = existentes.stream()
+                .anyMatch(s -> !s.getId().equals(id) &&
+                        s.getNombre().equalsIgnoreCase(servicioDTO.getNombre()));
+        if (existe) {
+            throw new IllegalArgumentException("Ya existe otro servicio con el nombre: " + servicioDTO.getNombre());
+        }
+
         return servicioDAO.actualizarServicio(id, servicioDTO);
     }
 
-    /**
-     * Elimina un servicio por su ID.
-     *
-     * @param id el ID del servicio
-     * @return true si el servicio fue eliminado, false en caso contrario
-     */
     @Override
     public boolean delete(Long id) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("ID inválido");
+        }
+
+        // 🚨 Regla: evitar borrar si está asociado a alojamientos
+        boolean enUso = servicioDAO.estaAsociadoAAlgunAlojamiento(id);
+        if (enUso) {
+            throw new IllegalStateException("No se puede eliminar el servicio, está asociado a alojamientos");
+        }
+
         return servicioDAO.eliminarServicio(id);
     }
+
+    // -------------------- Validaciones privadas --------------------
+    private void validateServicio(ServicioDTO dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Servicio no puede ser nulo");
+        }
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre es obligatorio");
+        }
+        if (dto.getNombre().length() > 100) {
+            throw new IllegalArgumentException("El nombre no puede superar los 100 caracteres");
+        }
+        if (dto.getDescripcion() == null || dto.getDescripcion().trim().isEmpty()) {
+            throw new IllegalArgumentException("La descripción es obligatoria");
+        }
+        if (dto.getDescripcion().length() > 500) {
+            throw new IllegalArgumentException("La descripción no puede superar los 500 caracteres");
+        }
+    }
 }
+

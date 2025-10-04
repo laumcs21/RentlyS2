@@ -42,7 +42,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Autentica a un usuario y genera un token de autenticación.
+     * Auténtica a un usuario y genera un token de autenticación.
      *
      * @param request la solicitud de autenticación con el email y la contraseña
      * @return una respuesta de autenticación con el token generado

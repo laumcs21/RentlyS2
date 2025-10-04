@@ -61,4 +61,9 @@ public class ServicioDAO {
         }
         return false;
     }
+
+    public boolean estaAsociadoAAlgunAlojamiento(Long id) {
+        return servicioRepository.existsInAlojamiento(id);
+    }
+
 }

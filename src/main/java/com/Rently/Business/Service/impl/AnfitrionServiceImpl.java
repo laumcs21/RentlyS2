@@ -3,95 +3,179 @@ package com.Rently.Business.Service.impl;
 import com.Rently.Business.DTO.AnfitrionDTO;
 import com.Rently.Business.Service.AnfitrionService;
 import com.Rently.Persistence.DAO.AnfitrionDAO;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * Implementación del servicio para la gestión de anfitriones.
+ * Contiene validaciones de negocio antes de invocar al DAO.
  */
 @Service
+@Transactional
+@RequiredArgsConstructor
+@Slf4j
 public class AnfitrionServiceImpl implements AnfitrionService {
 
-    @Autowired
-    private AnfitrionDAO anfitrionDAO;
+    private final AnfitrionDAO anfitrionDAO;
+
+    // Regex simple para validar emails
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     /**
-     * Crea un nuevo anfitrión.
-     *
-     * @param anfitrionDTO el anfitrión a crear
-     * @return el anfitrión creado
+     * CREATE - Crear nuevo anfitrión
      */
     @Override
     public AnfitrionDTO create(AnfitrionDTO anfitrionDTO) {
+        log.info("Creando anfitrión: {}", anfitrionDTO.getEmail());
+
+        validateAnfitrionData(anfitrionDTO);
+
         return anfitrionDAO.crearAnfitrion(anfitrionDTO);
     }
 
     /**
-     * Busca un anfitrión por su ID.
-     *
-     * @param id el ID del anfitrión
-     * @return un optional que contiene el anfitrión si se encuentra, o vacío en caso contrario
+     * READ - Buscar anfitrión por ID
      */
     @Override
+    @Transactional(readOnly = true)
     public Optional<AnfitrionDTO> findById(Long id) {
+        log.debug("Buscando anfitrión ID: {}", id);
+
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("El ID debe ser válido y mayor que 0");
+        }
+
         return anfitrionDAO.buscarPorId(id);
     }
 
     /**
-     * Busca un anfitrión por su email.
-     *
-     * @param email el email del anfitrión
-     * @return un optional que contiene el anfitrión si se encuentra, o vacío en caso contrario
+     * READ - Buscar anfitrión por email
      */
     @Override
+    @Transactional(readOnly = true)
     public Optional<AnfitrionDTO> findByEmail(String email) {
+        log.debug("Buscando anfitrión por email: {}", email);
+
+        if (email == null || email.trim().isEmpty() || !EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException("El email proporcionado no es válido");
+        }
+
         return anfitrionDAO.buscarPorEmail(email);
     }
 
     /**
-     * Busca anfitriones por su nombre.
-     *
-     * @param name el nombre a buscar
-     * @return una lista de anfitriones que coinciden con el nombre especificado
+     * READ - Buscar anfitriones por nombre
      */
     @Override
+    @Transactional(readOnly = true)
     public List<AnfitrionDTO> findByName(String name) {
+        log.debug("Buscando anfitriones por nombre: {}", name);
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre no puede estar vacío");
+        }
+
         return anfitrionDAO.buscarPorNombre(name);
     }
 
     /**
-     * Devuelve una lista de todos los anfitriones.
-     *
-     * @return una lista de todos los anfitriones
+     * READ ALL - Listar todos
      */
     @Override
+    @Transactional(readOnly = true)
     public List<AnfitrionDTO> findAll() {
+        log.debug("Listando todos los anfitriones");
         return anfitrionDAO.listarTodos();
     }
 
-    /**
-     * Actualiza un anfitrión existente.
-     *
-     * @param id           el ID del anfitrión
-     * @param anfitrionDTO el anfitrión con la información actualizada
-     * @return un optional que contiene el anfitrión actualizado si se encuentra, o vacío en caso contrario
-     */
     @Override
     public Optional<AnfitrionDTO> update(Long id, AnfitrionDTO anfitrionDTO) {
-        return anfitrionDAO.actualizarAnfitrion(id, anfitrionDTO);
+        log.info("Actualizando anfitrión ID: {}", id);
+
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("El ID debe ser válido y mayor que 0");
+        }
+
+        validateAnfitrionUpdateData(anfitrionDTO);
+
+        Optional<AnfitrionDTO> actualizado = anfitrionDAO.actualizarAnfitrion(id, anfitrionDTO);
+
+        if (actualizado.isEmpty()) {
+            throw new RuntimeException("Anfitrión con ID " + id + " no existe");
+        }
+
+        return actualizado;
     }
 
-    /**
-     * Elimina un anfitrión por su ID.
-     *
-     * @param id el ID del anfitrión
-     * @return true si el anfitrión fue eliminado, false en caso contrario
-     */
     @Override
     public boolean delete(Long id) {
-        return anfitrionDAO.eliminarAnfitrion(id);
+        log.info("Eliminando anfitrión ID: {}", id);
+
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("El ID debe ser válido y mayor que 0");
+        }
+
+        boolean eliminado = anfitrionDAO.eliminarAnfitrion(id);
+
+        if (!eliminado) {
+            throw new RuntimeException("Anfitrión con ID " + id + " no existe");
+        }
+
+        return true;
+    }
+
+    // ==================== MÉTODOS PRIVADOS DE VALIDACIÓN ====================
+
+    private void validateAnfitrionData(AnfitrionDTO dto) {
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre es obligatorio");
+        }
+
+        if (dto.getNombre().length() > 100) {
+            throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
+        }
+
+        if (dto.getEmail() == null || !EMAIL_PATTERN.matcher(dto.getEmail()).matches()) {
+            throw new IllegalArgumentException("El formato de email no es válido");
+        }
+
+        if (dto.getTelefono() != null && !dto.getTelefono().matches("\\d{7,15}")) {
+            throw new IllegalArgumentException("El teléfono debe tener entre 7 y 15 dígitos numéricos");
+        }
+
+        if (dto.getFechaNacimiento() != null && dto.getFechaNacimiento().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("La fecha de nacimiento no puede estar en el futuro");
+        }
+    }
+
+    private void validateAnfitrionUpdateData(AnfitrionDTO dto) {
+        if (dto.getNombre() != null) {
+            if (dto.getNombre().trim().isEmpty()) {
+                throw new IllegalArgumentException("El nombre no puede estar vacío");
+            }
+            if (dto.getNombre().length() > 100) {
+                throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
+            }
+        }
+
+        if (dto.getEmail() != null && !EMAIL_PATTERN.matcher(dto.getEmail()).matches()) {
+            throw new IllegalArgumentException("El formato de email no es válido");
+        }
+
+        if (dto.getTelefono() != null && !dto.getTelefono().matches("\\d{7,15}")) {
+            throw new IllegalArgumentException("El teléfono debe tener entre 7 y 15 dígitos numéricos");
+        }
+
+        if (dto.getFechaNacimiento() != null && dto.getFechaNacimiento().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("La fecha de nacimiento no puede estar en el futuro");
+        }
     }
 }

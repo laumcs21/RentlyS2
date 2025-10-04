@@ -29,6 +29,15 @@ public interface UsuarioService {
      */
     Optional<UsuarioDTO> findUserById(Long id);
 
+
+    /**
+     * Busca un usuario por su email.
+     *
+     * @param email El email del usuario a buscar.
+     * @return Un Optional que contiene el DTO del usuario si se encuentra, o vacío si no.
+     */
+    Optional<UsuarioDTO> findUserByEmail(String email);
+
     /**
      * Obtiene todos los usuarios registrados.
      *
