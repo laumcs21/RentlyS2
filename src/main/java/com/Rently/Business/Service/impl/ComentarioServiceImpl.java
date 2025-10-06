@@ -1,19 +1,23 @@
 package com.Rently.Business.Service.impl;
 
 import com.Rently.Business.DTO.AlojamientoDTO;
-import com.Rently.Business.DTO.AnfitrionDTO;
 import com.Rently.Business.DTO.ComentarioDTO;
 import com.Rently.Business.DTO.UsuarioDTO;
 import com.Rently.Business.Service.ComentarioService;
 import com.Rently.Business.Service.UsuarioService;
+import com.Rently.Configuration.Security.JwtService;
 import com.Rently.Persistence.DAO.AlojamientoDAO;
 import com.Rently.Persistence.DAO.AnfitrionDAO;
 import com.Rently.Persistence.DAO.ComentarioDAO;
+import com.Rently.Persistence.Entity.Alojamiento;
+import com.Rently.Persistence.Entity.Anfitrion;
+import com.Rently.Persistence.Entity.Comentario;
+import com.Rently.Persistence.Entity.Rol;
 import com.Rently.Persistence.Mapper.AlojamientoMapper;
+import com.Rently.Persistence.Repository.ComentarioRepository;
+import com.Rently.Persistence.Repository.AnfitrionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +43,20 @@ public class ComentarioServiceImpl implements ComentarioService {
 
     @Autowired
     private AlojamientoMapper alojamientoMapper;
+
+    @Autowired
+    private ComentarioRepository comentarioRepository;
+
+    @Autowired
+    private AnfitrionRepository anfitrionRepository;
+
+    private final JwtService jwtService;
+
+    @Autowired
+    public ComentarioServiceImpl(JwtService jwtService) {
+        this.jwtService = jwtService;
+    }
+
 
     /**
      * Crea un nuevo comentario.
@@ -119,49 +137,58 @@ public class ComentarioServiceImpl implements ComentarioService {
     /**
      * Añade una respuesta al comentario (solo permitido al anfitrión).
      *
-     * @param id       el ID del comentario
-     * @param response la respuesta a añadir
+     * @param comentarioId el ID del comentario
+     * @param respuesta    la respuesta a añadir
      * @return el comentario actualizado con la respuesta
      * @throws IllegalArgumentException si el ID o la respuesta son inválidos
      */
     @Override
-    public ComentarioDTO addResponse(Long id, String response) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("El ID del comentario debe ser válido.");
+    public ComentarioDTO addResponse(Long comentarioId, String respuesta, String token) {
+        if (comentarioId == null || comentarioId <= 0) {
+            throw new IllegalArgumentException("Debe proporcionar un ID válido de comentario.");
         }
-        if (response == null || response.trim().isEmpty()) {
+
+        if (respuesta == null || respuesta.trim().isEmpty()) {
             throw new IllegalArgumentException("La respuesta no puede estar vacía.");
         }
 
-        // Buscar comentario existente
-        ComentarioDTO comentarioExistente = comentarioDAO.buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("No se encontró el comentario especificado."));
+        // 1️⃣ Extraer el email del anfitrión autenticado desde el JWT
+        String email = jwtService.extractUsername(token.replace("Bearer ", ""));
 
-        // Obtener anfitrión del alojamiento
-        AlojamientoDTO alojamientoDTO = alojamientoDAO.buscarPorId(comentarioExistente.getAlojamientoId())
-                .orElseThrow(() -> new IllegalArgumentException("No se encontró el alojamiento especificado."));
+        // 2️⃣ Verificar que sea un anfitrión válido
+        Anfitrion anfitrionAutenticado = anfitrionRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("El usuario autenticado no es un anfitrión válido."));
 
-        Long anfitrionAlojamientoId = alojamientoDTO.getAnfitrionId();
-        AnfitrionDTO anfitrionDelAlojamiento = anfitrionDAO.buscarPorId(anfitrionAlojamientoId)
-                .orElseThrow(() -> new IllegalArgumentException("No se encontró el anfitrión especificado."));
+        // 3️⃣ Buscar el comentario
+        ComentarioDTO comentarioDTO = comentarioDAO.buscarPorId(comentarioId)
+                .orElseThrow(() -> new IllegalStateException("Comentario no encontrado."));
 
-
-        String emailActual = ((UserDetails) SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getPrincipal()).getUsername();
-
-        UsuarioDTO usuarioActual = usuarioService.findUserByEmail(emailActual)
-                .orElseThrow(() -> new IllegalStateException("No se encontró el usuario autenticado."));
-
-        // Validar que el usuario autenticado sea el anfitrión del alojamiento
-        if (!usuarioActual.getId().equals(anfitrionDelAlojamiento.getUsuario().getId())) {
-            throw new IllegalStateException("Solo el anfitrión del alojamiento puede responder comentarios.");
+        // 4️⃣ Validar que el comentario aún no tenga respuesta
+        if (comentarioDTO.getRespuesta() != null && !comentarioDTO.getRespuesta().isEmpty()) {
+            throw new IllegalStateException("No es posible responder un comentario que ya tiene respuesta.");
         }
 
-        // Agregar respuesta y guardar
-        comentarioExistente.setRespuesta(response);
-        return comentarioDAO.responderComentario(id, comentarioExistente);
+        // 5️⃣ Verificar que el comentario pertenece a un alojamiento con anfitrión
+        AlojamientoDTO alojamiento = alojamientoDAO.buscarPorId(comentarioDTO.getAlojamientoId())
+                .orElseThrow(() -> new IllegalStateException("El comentario no está asociado a un alojamiento válido."));
+
+        Long anfitrionId = alojamiento.getAnfitrionId();
+        if (anfitrionId == null) {
+            throw new IllegalStateException("El alojamiento no tiene anfitrión asociado.");
+        }
+
+        // 6️⃣ Validar que el anfitrión autenticado sea el dueño del alojamiento
+        if (!anfitrionId.equals(anfitrionAutenticado.getId())) {
+            throw new SecurityException("Solo el anfitrión del alojamiento puede responder comentarios.");
+        }
+
+        // 7️⃣ Guardar la respuesta
+        ComentarioDTO comentarioActualizado = comentarioDAO.responderComentario(comentarioId, respuesta);
+
+        return comentarioActualizado;
     }
+
+
 
 
     /**
@@ -171,17 +198,36 @@ public class ComentarioServiceImpl implements ComentarioService {
      * @throws IllegalArgumentException si el ID es inválido
      */
     @Override
-    public void delete(Long id) {
+    public void delete(Long id, String token) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("Debe proporcionar un ID válido para eliminar el comentario.");
         }
 
-        boolean existe = comentarioDAO.existeComentario(id);
-        if (!existe) {
-            throw new IllegalStateException("No existe un comentario con el ID especificado.");
+        // Buscar el comentario
+        ComentarioDTO comentario = comentarioDAO.buscarPorId(id)
+                .orElseThrow(() -> new IllegalStateException("Comentario no encontrado."));
+
+        // Obtener el email del usuario autenticado desde el token JWT
+        String email = jwtService.extractUsername(token.replace("Bearer ", ""));
+
+        // Buscar el usuario autenticado
+        UsuarioDTO usuarioAutenticado = usuarioService.findUserByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Usuario autenticado no encontrado."));
+
+        Long usuarioId = usuarioAutenticado.getId();
+        Long idUsuarioComentario = comentario.getUsuarioId();
+
+        // Verificar si el usuario autenticado es el dueño del comentario o un administrador
+        boolean esAdmin = usuarioAutenticado.getRol().equals(Rol.ADMINISTRADOR);
+
+        if (!usuarioId.equals(idUsuarioComentario) && !esAdmin) {
+            throw new SecurityException("No tiene permisos para eliminar este comentario.");
         }
 
+        // Eliminar el comentario
         comentarioDAO.eliminarComentario(id);
     }
+
 }
+
 
