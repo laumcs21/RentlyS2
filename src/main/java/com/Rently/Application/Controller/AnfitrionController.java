@@ -1,5 +1,6 @@
 package com.Rently.Application.Controller;
 
+import com.Rently.Business.Service.AnfitrionService;
 import com.Rently.Business.DTO.AnfitrionDTO;
 import com.Rently.Business.DTO.AlojamientoDTO;
 import com.Rently.Business.DTO.ReservaDTO;
@@ -12,7 +13,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.Map;
 
@@ -20,6 +23,12 @@ import java.util.Map;
 @RequestMapping("/api/anfitriones")
 @Tag(name = "Anfitriones", description = "Operaciones relacionadas con la gestión de anfitriones y sus alojamientos")
 public class AnfitrionController {
+
+    private final AnfitrionService anfitrionService;
+
+    public AnfitrionController(AnfitrionService anfitrionService) {
+        this.anfitrionService = anfitrionService;
+    }
 
     // ---------------- CRUD de Anfitriones ----------------
 
@@ -31,7 +40,13 @@ public class AnfitrionController {
             @ApiResponse(responseCode = "409", description = "Email ya registrado")
     })
     public ResponseEntity<AnfitrionDTO> crearAnfitrion(@RequestBody AnfitrionDTO anfitrion) {
-        return ResponseEntity.ok(null);
+        AnfitrionDTO anfitrionCreado = anfitrionService.create(anfitrion);
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(anfitrionCreado.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(anfitrionCreado);
     }
 
     @GetMapping("/{id}")

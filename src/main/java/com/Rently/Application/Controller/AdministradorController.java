@@ -2,6 +2,7 @@ package com.Rently.Application.Controller;
 
 import com.Rently.Business.DTO.AdministradorDTO;
 import com.Rently.Business.DTO.UsuarioDTO;
+import com.Rently.Business.Service.AdministradorService;
 import com.Rently.Business.DTO.AnfitrionDTO;
 import com.Rently.Business.DTO.AlojamientoDTO;
 import com.Rently.Business.DTO.ReservaDTO;
@@ -13,7 +14,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.Map;
 
@@ -21,6 +24,12 @@ import java.util.Map;
 @RequestMapping("/api/administradores")
 @Tag(name = "Administradores", description = "Operaciones relacionadas con la gestión administrativa del sistema")
 public class AdministradorController {
+
+    private final AdministradorService administradorService;
+
+    public AdministradorController(AdministradorService administradorService) {
+        this.administradorService = administradorService;
+    }
 
     // ---------------- CRUD de Administradores ----------------
 
@@ -37,7 +46,13 @@ public class AdministradorController {
             @ApiResponse(responseCode = "400", description = "Datos inválidos")
     })
     public ResponseEntity<AdministradorDTO> crearAdministrador(@RequestBody AdministradorDTO administrador) {
-        return ResponseEntity.status(201).body(null);
+        AdministradorDTO adminCreado = administradorService.create(administrador);
+        URI location = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(adminCreado.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(adminCreado);
     }
 
     @GetMapping("/{id}")

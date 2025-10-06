@@ -1,9 +1,12 @@
 package com.Rently.Configuration;
 
+import org.springframework.http.HttpMethod;
 import com.Rently.Configuration.Security.JwtAuthenticationFilter;
 import com.Rently.Configuration.Security.JwtService;
 import com.Rently.Persistence.Repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties.Http;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -52,10 +55,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
-                                "/api/administradores/",
+                               // "/api/administradores/",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/anfitriones").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/administradores").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
