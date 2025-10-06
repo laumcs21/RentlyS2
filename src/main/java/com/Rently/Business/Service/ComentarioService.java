@@ -40,12 +40,12 @@ public interface ComentarioService {
      * @param response la respuesta a añadir
      * @return el comentario con la respuesta añadida
      */
-    ComentarioDTO addResponse(Long id, String response);
+    ComentarioDTO addResponse(Long id, String response, String token);
 
     /**
      * Elimina un comentario por su ID.
      *
      * @param id el ID del comentario
      */
-    void delete(Long id);
+    void delete(Long id, String token);
 }

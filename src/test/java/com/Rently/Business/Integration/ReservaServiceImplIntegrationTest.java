@@ -5,9 +5,7 @@ import com.Rently.Business.Service.AdministradorService;
 import com.Rently.Business.Service.AlojamientoService;
 import com.Rently.Business.Service.ReservaService;
 import com.Rently.Business.Service.UsuarioService;
-import com.Rently.Persistence.Entity.Alojamiento;
 import com.Rently.Persistence.Entity.EstadoReserva;
-import com.Rently.Persistence.Entity.Rol;
 import com.Rently.Persistence.Entity.Usuario;
 import com.Rently.Persistence.Repository.UsuarioRepository;
 import org.junit.jupiter.api.*;
@@ -27,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class ReservaServiceIntegrationTest {
+class ReservaServiceImplIntegrationTest {
 
     @Autowired
     private TestDataFactory factory;
