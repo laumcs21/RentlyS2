@@ -1,15 +1,13 @@
 package com.Rently.Configuration;
 
-import org.springframework.http.HttpMethod;
+import com.Rently.Persistence.Repository.AdministradorRepository;
+import com.Rently.Persistence.Repository.AnfitrionRepository;
 import com.Rently.Configuration.Security.JwtAuthenticationFilter;
-import com.Rently.Configuration.Security.JwtService;
 import com.Rently.Persistence.Repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.boot.autoconfigure.graphql.GraphQlProperties.Http;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -19,14 +17,19 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Collections;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -34,12 +37,8 @@ import java.util.Collections;
 public class SecurityConfig {
 
     private final UsuarioRepository usuarioRepository;
-
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService,
-                                                           @Lazy UserDetailsService userDetailsService) {
-        return new JwtAuthenticationFilter(jwtService, userDetailsService);
-    }
+    private final AnfitrionRepository anfitrionRepository;
+    private final AdministradorRepository administradorRepository;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -47,54 +46,54 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public UserDetailsService userDetailsService() {
+        return username ->
+                usuarioRepository.findByEmail(username).<UserDetails>map(u ->
+                                new User(u.getEmail(), u.getContrasena(),
+                                        Collections.singleton(new SimpleGrantedAuthority("ROLE_" + u.getRol().name()))))
+
+                        .orElseGet(() -> anfitrionRepository.findByEmail(username).<UserDetails>map(a ->
+                                        new User(a.getEmail(), a.getContrasena(),
+                                                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + a.getRol().name()))))
+
+                                .orElseGet(() -> administradorRepository.findByEmail(username).<UserDetails>map(ad ->
+                                                new User(ad.getEmail(), ad.getContrasena(),
+                                                        Collections.singleton(new SimpleGrantedAuthority("ROLE_" + ad.getRol().name()))))
+
+                                        .orElseThrow(() -> new UsernameNotFoundException("No existe cuenta con email: " + username))));
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider p = new DaoAuthenticationProvider();
+        p.setUserDetailsService(userDetailsService());
+        p.setPasswordEncoder(passwordEncoder());
+        return p;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
+        return cfg.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/register",
-                               // "/api/administradores/",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/"
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/anfitriones").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/administradores").permitAll()
+                        // PUBLICAS
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> usuarioRepository.findByEmail(username)
-                .map(usuario -> new User(
-                        usuario.getEmail(),
-                        usuario.getContrasena(),
-                        Collections.singleton(new SimpleGrantedAuthority(usuario.getRol().name()))
-                ))
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + username));
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService());
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
     }
 }
 

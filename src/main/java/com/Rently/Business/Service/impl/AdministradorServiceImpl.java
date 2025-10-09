@@ -3,11 +3,19 @@ package com.Rently.Business.Service.impl;
 import com.Rently.Business.DTO.AdministradorDTO;
 import com.Rently.Business.Service.AdministradorService;
 import com.Rently.Persistence.DAO.AdministradorDAO;
+import com.Rently.Persistence.Entity.Administrador;
+import com.Rently.Persistence.Entity.Anfitrion;
 import com.Rently.Persistence.Entity.Rol;
+import com.Rently.Persistence.Mapper.PersonaMapper;
+import com.Rently.Persistence.Repository.AdministradorRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -16,21 +24,29 @@ import java.util.Optional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 @Slf4j
 public class AdministradorServiceImpl implements AdministradorService {
 
     @Autowired
+
     private AdministradorDAO administradorDAO;
+    private AdministradorRepository administradorRepository;
+    private PersonaMapper personaMapper;
+    private final PasswordEncoder passwordEncoder;
+
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
 
 
     @Override
     public AdministradorDTO create(AdministradorDTO administradorDTO) {
-        log.info("Creando administrador: {}", administradorDTO);
-
         validateAdminData(administradorDTO);
 
-        return administradorDAO.crearAdministrador(administradorDTO);
+        Administrador entity = personaMapper.dtoToAdmin(administradorDTO);
+        entity.setContrasena(passwordEncoder.encode(administradorDTO.getContrasena()));
+
+        Administrador saved = administradorRepository.save(entity);
+        return personaMapper.adminToDTO(saved);
     }
 
     @Override

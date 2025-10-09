@@ -2,6 +2,7 @@ package com.Rently.Business.DTO;
 
 import com.Rently.Persistence.Entity.Rol;
 import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public abstract class PersonaDTO {
 
@@ -10,6 +11,7 @@ public abstract class PersonaDTO {
     private String email;
     private String telefono;
     private String contrasena;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate fechaNacimiento;
     private Rol rol;
     private String fotoPerfil;

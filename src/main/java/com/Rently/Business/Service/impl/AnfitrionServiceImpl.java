@@ -3,8 +3,12 @@ package com.Rently.Business.Service.impl;
 import com.Rently.Business.DTO.AnfitrionDTO;
 import com.Rently.Business.Service.AnfitrionService;
 import com.Rently.Persistence.DAO.AnfitrionDAO;
+import com.Rently.Persistence.Entity.Anfitrion;
+import com.Rently.Persistence.Mapper.PersonaMapper;
+import com.Rently.Persistence.Repository.AnfitrionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +28,9 @@ import java.util.regex.Pattern;
 public class AnfitrionServiceImpl implements AnfitrionService {
 
     private final AnfitrionDAO anfitrionDAO;
+    private final AnfitrionRepository anfitrionRepository;
+    private final PersonaMapper personaMapper;
+    private final PasswordEncoder passwordEncoder;
 
     // Regex simple para validar emails
     private static final Pattern EMAIL_PATTERN =
@@ -34,11 +41,14 @@ public class AnfitrionServiceImpl implements AnfitrionService {
      */
     @Override
     public AnfitrionDTO create(AnfitrionDTO anfitrionDTO) {
-        log.info("Creando anfitrión: {}", anfitrionDTO.getEmail());
 
         validateAnfitrionData(anfitrionDTO);
 
-        return anfitrionDAO.crearAnfitrion(anfitrionDTO);
+        Anfitrion entity = personaMapper.dtoToAnfitrion(anfitrionDTO);
+        entity.setContrasena(passwordEncoder.encode(anfitrionDTO.getContrasena()));
+
+        Anfitrion saved = anfitrionRepository.save(entity);
+        return personaMapper.anfitrionToDTO(saved);
     }
 
     /**
